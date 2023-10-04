@@ -1,7 +1,6 @@
 from random import choices
 import pandas as pd
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
 import numpy as np
 
 
@@ -62,29 +61,32 @@ def space(n, m):  # Создание поля
     data = [[0 for _ in range(n)] for _ in range(m)]
     for i in range(n):
         for j in range(m):
-            if n // 2 - 10 < i < n // 2 + 10 and n // 2 - 10 < j < n // 2 + 10:
+            if n // 2 - k < i < n // 2 + k and n // 2 - k < j < n // 2 + k:
                 data[i][j] = 1
     return data
 
 
-def update(i):  # Обновление графика
-    im = plt.imshow(np.array(data), animated=False)
-    algorithm(1)
-    algorithm(-1)
-    if i > 100:
-        plt.pause(100)
-
-
 # Main
-n, m = 100, 100
+n, m = 200, 200
+k = 20
 data = space(n, m)
 chart = pd.read_excel('Solubility Chart.xlsx', index_col=0)
 kation, anion = input("Введите катион вещества: "), input("Введите анион вещества: ")
 solubility = chart.loc[anion, kation]
 check_tuple = check()
+epoch = 100
+
+plt.ion()
+fig, ax = plt.subplots()
+axim = ax.imshow(np.array(data), vmin=0, vmax=1, cmap='cool')
 
 if check_tuple[1]:
-    fig = plt.figure()
-    ani = animation.FuncAnimation(fig, update, frames=np.arange(0, 100), interval=100, cache_frame_data=False)
-    # ani.save('Solubility.gif', dpi=80)
+    for _ in range(epoch):
+        algorithm(1)
+        algorithm(-1)
+        axim.set_data(np.array(data))
+        fig.canvas.flush_events()
+        # plt.pause(0.1)
+
+    plt.savefig("Solubility.png")
     plt.show()
