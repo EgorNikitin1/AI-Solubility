@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from tkinter import *
 from PIL import ImageTk, Image
-from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
 n, l, P = 200, 20, 0
 data, weight = [], []
@@ -115,6 +115,7 @@ def space(n):  # Создание поля
 
 
 def set_weight(p, count):
+    w = []
     if count != 0:
         if p == 0:
             p += count * 2.5
@@ -137,7 +138,7 @@ def set_weight(p, count):
 
 
 def main():
-    global n, l, data, solubility, weight, P
+    global n, l, solubility, weight, P, data
     data = space(n)
     chart = pd.read_excel('Solubility Chart.xlsx', index_col=0)
     solubility = chart.loc[anion, kation]
@@ -146,22 +147,28 @@ def main():
     P = int(check_tuple[0])
     COUNT = 0
     weight = set_weight(P, COUNT)
-    epoch = 100
-
-    plt.ion()
-    fig, ax = plt.subplots()
-    canvas = FigureCanvasTkAgg(fig, master=down_frame)
-    canvas.get_tk_widget().pack()
-    axim = ax.imshow(np.array(data), vmin=0, vmax=1, cmap='cool')
+    epoch = 200
 
     if check_tuple[1]:
+        fig, ax = plt.subplots()
+        canvas = FigureCanvasTkAgg(fig, master=down_frame)
+        canvas.get_tk_widget().pack()
+        toolbar = NavigationToolbar2Tk(canvas, down_frame, pack_toolbar=False)
+        toolbar.update()
+        toolbar.pack()
+
+        plt.ion()
+        axim = ax.imshow(np.array(data), vmin=0, vmax=1, cmap='cool')
+
+        counter = 0
+        Label(up_frame, text=f"Количество итераций: {counter}").grid(row=4, column=0, columnspan=2, sticky="we")
         for _ in range(epoch):
             algorithm_margolus(1)
             algorithm_margolus(-1)
             axim.set_data(np.array(data))
-            canvas.draw()
             fig.canvas.flush_events()
-
+            counter += 1
+            Label(up_frame, text=f"Количество итераций: {counter}").grid(row=4, column=0, columnspan=2, sticky="we")
         # plt.savefig("Solubility.png")
 
 
@@ -173,8 +180,8 @@ def btn_click():
 
 
 root = Tk()
-root.title("Модель процесса диффузии вещества в водной среде")
-root.geometry("525x725")
+root.title("Моделирование процесса диффузии вещества в водной среде")
+root.geometry("625x875")
 root.resizable(False, False)
 
 up_frame = Frame(root)
@@ -194,8 +201,8 @@ atxt.grid(row=1, column=1, sticky="we")
 
 Button(up_frame, text="Ввести", command=btn_click).grid(row=2, column=0, columnspan=2, sticky="we")
 
-img = ImageTk.PhotoImage(Image.open("Solubility Chart.png").resize((250, 250)))
-panel = Label(up_frame, image=img, width=250)
-panel.grid(row=0, column=2, rowspan=4)
+img = ImageTk.PhotoImage(Image.open("Solubility Chart.png").resize((350, 350)))
+panel = Label(up_frame, image=img, width=350)
+panel.grid(row=0, column=2, rowspan=5)
 
 root.mainloop()
