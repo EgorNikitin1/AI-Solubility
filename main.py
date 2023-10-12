@@ -8,7 +8,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 
 ###
 # КОНФИГУРАЦИЯ
-n, l, epoch = 100, 10, 100
+n, l, epoch = 100, 10, 10
 # ПЕРЕМЕННЫЕ
 P = 100
 data, weight = [], []
@@ -173,7 +173,8 @@ def main():
     weight = set_weight(P, 0)
 
     if flag:
-        fig, ax = plt.subplots()
+        fig = plt.figure(1)
+        ax = fig.add_subplot()
         canvas = FigureCanvasTkAgg(fig, master=down_frame)
         canvas.get_tk_widget().pack()
         toolbar = NavigationToolbar2Tk(canvas, down_frame, pack_toolbar=False)
@@ -193,19 +194,25 @@ def main():
             counter += 1
             Label(up_frame, text=f"Количество итераций: {counter}").grid(row=4, column=0, columnspan=2, sticky="we")
         # plt.savefig("Solubility new H.png")
+        down_frame.bind_all('<Button-3>', lambda event: remove_plot(canvas, toolbar))
 
 
 def btn_click():
     global kation, anion
     kation = ktxt.get()
     anion = atxt.get()
+
     main()
+
+
+def remove_plot(canvas, toolbar):
+    canvas.get_tk_widget().destroy()
+    toolbar.destroy()
 
 
 root = Tk()
 root.title("Моделирование процесса диффузии вещества в водной среде")
 root.geometry("625x875")
-root.resizable(False, False)
 
 up_frame = Frame(root)
 up_frame.pack(fill="both", expand=True)
@@ -223,6 +230,7 @@ ktxt.grid(row=0, column=1, sticky="we")
 atxt.grid(row=1, column=1, sticky="we")
 
 Button(up_frame, text="Ввести", command=btn_click).grid(row=2, column=0, columnspan=2, sticky="we")
+root.bind_all('<Return>', lambda event: btn_click())
 
 img = ImageTk.PhotoImage(Image.open("Solubility Chart.png").resize((350, 350)))
 panel = Label(up_frame, image=img, width=350)
