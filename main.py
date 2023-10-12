@@ -6,33 +6,63 @@ from tkinter import *
 from PIL import ImageTk, Image
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolbar2Tk
 
-n, l, P = 200, 20, 0
+###
+# КОНФИГУРАЦИЯ
+n, l, epoch = 100, 10, 100
+# ПЕРЕМЕННЫЕ
+P = 100
 data, weight = [], []
-solubility, kation, anion, mes = "", "", "", ""
+kation, anion, mes = "", "", ""
+flag = True
+###
 
 
-def check():  # Проверка на растворимость
-    global mes
+def create_data():  # Создание поля
+    arr = [[0 for _ in range(n)] for _ in range(n)]
+    for i in range(n):
+        for j in range(n):
+            if n // 2 - l < i < n // 2 + l and n // 2 - l < j < n // 2 + l:
+                arr[i][j] = 1
+    return arr
+
+
+def check(df):  # Проверка на растворимость
+    global mes, flag
     p = 0
-    flag = True
-    if solubility == "Р":
-        mes = "Вещество растворимо"
-        p = 0
-    elif solubility == "М":
-        mes = "Вещество мало растворимо"
-        p = 50
-    elif solubility == "Н":
-        mes = "Вещество не растворимо"
-        p = 90
-    elif solubility == "-":
-        mes = "Вещество не растворяется в водной среде"
-        flag = False
-    elif solubility == "?":
-        mes = "Нет достоверных сведений о существовании соединения"
-        flag = False
+
+    try:
+        solubility = str(df.loc[anion, kation])
+    except KeyError:
+        solubility = "?"
+
+    if solubility[0].isdigit():
+
+        def normalize(arr, row, col):
+            narr = arr.to_numpy()
+            maxel = narr[0][1]
+            for i in range(narr.shape[0]):
+                for j in range(narr.shape[1]):
+                    if str(narr[i][j]).isdigit() is True and narr[i][j] > maxel:
+                        maxel = narr[i][j]
+            return arr.loc[row, col] / maxel
+
+        norm = normalize(df, anion, kation)
+        if float(solubility) >= 1:
+            mes = "Вещество растворимо"
+            p = 90 + norm*10
+        elif 0.1 <= float(solubility) < 1:
+            mes = "Вещество мало растворимо"
+            p = 50 + norm*18375
+        elif float(solubility) < 0.1:
+            mes = "Вещество не растворимо"
+            p = 5 + norm*210000
     else:
         flag = False
-    return p, flag
+        if solubility == "-":
+            mes = "Вещество не растворяется в водной среде"
+        else:
+            mes = "Нет сведений о существовании соединения"
+    return p
 
 
 def rotation(temp):  # Поворот
@@ -50,27 +80,6 @@ def rotation(temp):  # Поворот
     else:
         rotated = temp
     return rotated
-
-
-def algorithm_margolus(k):  # Алгоритм окрестности Марголуса
-    global weight
-    for i in range(1, n, 2):
-        for j in range(1, n, 2):
-            temp = []
-            if (not i == n - 1 and not j == n - 1) and k == 1:  # Четное
-                counted = algorithm_moore_even(i, j)
-                weight = set_weight(P, counted)
-                temp.append([data[i][j], data[i][j + k]])
-                temp.append([data[i + k][j], data[i + k][j + k]])
-                rotated = rotation(temp)
-                data[i][j], data[i][j + k], data[i + k][j], data[i + k][j + k] = rotated[0][0], rotated[0][1], rotated[1][0], rotated[1][1]
-            elif k == -1:  # Нечетное
-                counted = algorithm_moore_odd(i, j)
-                weight = set_weight(P, counted)
-                temp.append([data[i][j], data[i][j + k]])
-                temp.append([data[i + k][j], data[i + k][j + k]])
-                rotated = rotation(temp)
-                data[i][j], data[i][j + k], data[i + k][j], data[i + k][j + k] = rotated[-1][-1], rotated[-1][0], rotated[0][-1], rotated[0][0]
 
 
 def algorithm_moore_even(row, col):  # Алгоритм окрестности Мура
@@ -105,51 +114,59 @@ def algorithm_moore_odd(row, col):  # Алгоритм окрестности М
     return count
 
 
-def space(n):  # Создание поля
-    data = [[0 for _ in range(n)] for _ in range(n)]
-    for i in range(n):
-        for j in range(n):
-            if n // 2 - l < i < n // 2 + l and n // 2 - l < j < n // 2 + l:
-                data[i][j] = 1
-    return data
-
-
 def set_weight(p, count):
     w = []
     if count != 0:
-        if p == 0:
+        if p >= 90:
             p += count * 2.5
             if p >= 100:
                 p = 100
-            w = [(100 - p) / 2, (100 - p) / 2, p]
-        elif p == 50:
+            w = [p / 2, p / 2, 100 - p]
+        elif 50 <= p < 90:
             p += count * 1.5
             if p >= 100:
                 p = 100
-            w = [(100 - p) / 2, (100 - p) / 2, p]
-        elif p == 90:
+            w = [p / 2, p / 2, 100 - p]
+        elif 5 <= p < 50:
             p += count * 0.4
             if p >= 100:
                 p = 100
-            w = [(100 - p) / 2, (100 - p) / 2, p]
+            w = [p / 2, p / 2, 100 - p]
     else:
-        w = [(100 - p) / 2, (100 - p) / 2, p]
+        w = [p / 2, p / 2, 100 - p]
     return w
 
 
-def main():
-    global n, l, solubility, weight, P, data
-    data = space(n)
-    chart = pd.read_excel('Solubility Chart.xlsx', index_col=0)
-    solubility = chart.loc[anion, kation]
-    check_tuple = check()
-    Label(up_frame, text=mes).grid(row=3, column=0, columnspan=2, sticky="we")
-    P = int(check_tuple[0])
-    COUNT = 0
-    weight = set_weight(P, COUNT)
-    epoch = 200
+def algorithm_margolus(k):  # Алгоритм окрестности Марголуса
+    global weight
+    for i in range(1, n, 2):
+        for j in range(1, n, 2):
+            temp = []
+            if (not i == n - 1 and not j == n - 1) and k == 1:  # Четное
+                counted = algorithm_moore_even(i, j)
+                weight = set_weight(P, counted)
+                temp.append([data[i][j], data[i][j + k]])
+                temp.append([data[i + k][j], data[i + k][j + k]])
+                rotated = rotation(temp)
+                data[i][j], data[i][j + k], data[i + k][j], data[i + k][j + k] = rotated[0][0], rotated[0][1], rotated[1][0], rotated[1][1]
+            elif k == -1:  # Нечетное
+                counted = algorithm_moore_odd(i, j)
+                weight = set_weight(P, counted)
+                temp.append([data[i][j], data[i][j + k]])
+                temp.append([data[i + k][j], data[i + k][j + k]])
+                rotated = rotation(temp)
+                data[i][j], data[i][j + k], data[i + k][j], data[i + k][j + k] = rotated[-1][-1], rotated[-1][0], rotated[0][-1], rotated[0][0]
 
-    if check_tuple[1]:
+
+def main():
+    global l, weight, data, P
+    data = create_data()
+    df = pd.read_excel('Solubility Chart.xlsx', sheet_name="Values", index_col=0)
+    P = check(df)
+    Label(up_frame, text=mes).grid(row=3, column=0, columnspan=2, sticky="we")
+    weight = set_weight(P, 0)
+
+    if flag:
         fig, ax = plt.subplots()
         canvas = FigureCanvasTkAgg(fig, master=down_frame)
         canvas.get_tk_widget().pack()
@@ -169,7 +186,7 @@ def main():
             fig.canvas.flush_events()
             counter += 1
             Label(up_frame, text=f"Количество итераций: {counter}").grid(row=4, column=0, columnspan=2, sticky="we")
-        # plt.savefig("Solubility.png")
+        # plt.savefig("Solubility new H.png")
 
 
 def btn_click():
