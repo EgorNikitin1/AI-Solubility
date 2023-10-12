@@ -8,7 +8,7 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 
 ###
 # КОНФИГУРАЦИЯ
-n, l, epoch = 100, 10, 10
+n, l, epoch = 100, 10, 100
 # ПЕРЕМЕННЫЕ
 P = 100
 data, weight = [], []
