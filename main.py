@@ -164,18 +164,25 @@ def algorithm_margolus(k):  # Алгоритм окрестности Марго
                 data[i][j], data[i][j + k], data[i + k][j], data[i + k][j + k] = rotated[-1][-1], rotated[-1][0], rotated[0][-1], rotated[0][0]
 
 
+def remove_plot(canvas, toolbar):
+    canvas.get_tk_widget().destroy()
+    toolbar.destroy()
+
+
 def main():
-    global l, weight, data, P
+    global l, weight, data, P, kation, anion
+    kation = ktxt.get()
+    anion = atxt.get()
     data = create_data()
     df = pd.read_excel('Solubility Chart.xlsx', sheet_name="Values", index_col=0)
     P = check(df)
     Label(up_frame, text=mes).grid(row=3, column=0, columnspan=2, sticky="we")
     weight = set_weight(P, 0)
-
     if flag:
         fig = plt.figure(1)
         ax = fig.add_subplot()
         canvas = FigureCanvasTkAgg(fig, master=down_frame)
+        canvas.draw()
         canvas.get_tk_widget().pack()
         toolbar = NavigationToolbar2Tk(canvas, down_frame, pack_toolbar=False)
         toolbar.update()
@@ -183,7 +190,6 @@ def main():
 
         plt.ion()
         axim = ax.imshow(np.array(data), vmin=0, vmax=1, cmap='cool')
-
         counter = 0
         Label(up_frame, text=f"Количество итераций: {counter}").grid(row=4, column=0, columnspan=2, sticky="we")
         for _ in range(epoch):
@@ -194,20 +200,7 @@ def main():
             counter += 1
             Label(up_frame, text=f"Количество итераций: {counter}").grid(row=4, column=0, columnspan=2, sticky="we")
         # plt.savefig("Solubility new H.png")
-        down_frame.bind_all('<Button-3>', lambda event: remove_plot(canvas, toolbar))
-
-
-def btn_click():
-    global kation, anion
-    kation = ktxt.get()
-    anion = atxt.get()
-
-    main()
-
-
-def remove_plot(canvas, toolbar):
-    canvas.get_tk_widget().destroy()
-    toolbar.destroy()
+        root.bind_all('<Button-3>', lambda event: remove_plot(canvas, toolbar))
 
 
 root = Tk()
@@ -229,8 +222,8 @@ atxt = Entry(up_frame)
 ktxt.grid(row=0, column=1, sticky="we")
 atxt.grid(row=1, column=1, sticky="we")
 
-Button(up_frame, text="Ввести", command=btn_click).grid(row=2, column=0, columnspan=2, sticky="we")
-root.bind_all('<Return>', lambda event: btn_click())
+Button(up_frame, text="Ввести", command=main).grid(row=2, column=0, columnspan=2, sticky="we")
+root.bind_all('<Return>', lambda event: main())
 
 img = ImageTk.PhotoImage(Image.open("Solubility Chart.png").resize((350, 350)))
 panel = Label(up_frame, image=img, width=350)
