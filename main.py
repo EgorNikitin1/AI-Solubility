@@ -10,9 +10,9 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg, NavigationToolb
 # КОНФИГУРАЦИЯ
 n, l, epoch = 100, 10, 100
 # ПЕРЕМЕННЫЕ
-P = 100
+P, click, coef = 100, 0, 0
 data, weight = [], []
-kation, anion, mes = "", "", ""
+kation, anion, mes, canvas, toolbar = "", "", "", "", ""
 flag = True
 ###
 
@@ -27,7 +27,7 @@ def create_data():  # Создание поля
 
 
 def check(df):  # Проверка на растворимость
-    global mes, flag
+    global mes, flag, coef
     p = 0
 
     try:
@@ -35,30 +35,25 @@ def check(df):  # Проверка на растворимость
     except KeyError:
         solubility = "?"
 
-    if solubility[0].isdigit():
+    if solubility[0].isdigit() or solubility[0] == "-":
+        solubility = float(solubility)
 
-        def normalize(arr, row, col):
-            narr = arr.to_numpy()
-            maxel = narr[0][1]
-            for i in range(narr.shape[0]):
-                for j in range(narr.shape[1]):
-                    if str(narr[i][j]).isdigit() is True and narr[i][j] > maxel:
-                        maxel = narr[i][j]
-            return arr.loc[row, col] / maxel
+        def fun_coef(x):
+            return 0.0019 * x ** 2 + 0.1094 * x + 1.7417
 
-        norm = normalize(df, anion, kation)
-        if float(solubility) >= 1:
+        coef = fun_coef(solubility)
+        if float(solubility) >= 0:
             mes = "Вещество растворимо"
-            p = 90 + norm*10
-        elif 0.1 <= float(solubility) < 1:
+            p = 80 + solubility*3.193
+        elif -2.3 <= float(solubility) < 0:
             mes = "Вещество мало растворимо"
-            p = 50 + norm*18375
-        elif float(solubility) < 0.1:
+            p = 60 + solubility*8.695
+        elif float(solubility) < -2.3:
             mes = "Вещество не растворимо"
-            p = 5 + norm*210000
+            p = 20 + solubility*1.145
     else:
         flag = False
-        if solubility == "-":
+        if solubility == "x":
             mes = "Вещество не растворяется в водной среде"
         else:
             mes = "Нет сведений о существовании соединения"
@@ -117,27 +112,12 @@ def algorithm_moore_odd(row, col):  # Алгоритм окрестности М
 def set_weight(p, count):
     w = []
     if count != 0:
-        if p >= 90:
-            p -= count * 2.5
-            if p >= 100:
-                p = 100
-            elif p <= 0:
-                p = 0
-            w = [p / 2, p / 2, 100 - p]
-        elif 50 <= p < 90:
-            p -= count * 1.5
-            if p >= 100:
-                p = 100
-            elif p <= 0:
-                p = 0
-            w = [p / 2, p / 2, 100 - p]
-        elif 5 <= p < 50:
-            p -= count * 0.4
-            if p >= 100:
-                p = 100
-            elif p <= 0:
-                p = 0
-            w = [p / 2, p / 2, 100 - p]
+        p -= count * coef
+        if p >= 100:
+            p = 100
+        elif p <= 0:
+            p = 1
+        w = [p / 2, p / 2, 100 - p]
     else:
         w = [p / 2, p / 2, 100 - p]
     return w
@@ -164,21 +144,20 @@ def algorithm_margolus(k):  # Алгоритм окрестности Марго
                 data[i][j], data[i][j + k], data[i + k][j], data[i + k][j + k] = rotated[-1][-1], rotated[-1][0], rotated[0][-1], rotated[0][0]
 
 
-def remove_plot(canvas, toolbar):
-    canvas.get_tk_widget().destroy()
-    toolbar.destroy()
-
-
 def main():
-    global l, weight, data, P, kation, anion
+    global l, weight, data, P, kation, anion, canvas, toolbar, click
+    click += 1
     kation = ktxt.get()
     anion = atxt.get()
     data = create_data()
-    df = pd.read_excel('Solubility Chart.xlsx', sheet_name="Values", index_col=0)
+    df = pd.read_excel('Solubility Chart.xlsx', sheet_name="Values log", index_col=0)
     P = check(df)
     Label(up_frame, text=mes).grid(row=3, column=0, columnspan=2, sticky="we")
     weight = set_weight(P, 0)
     if flag:
+        if click > 1:
+            canvas.get_tk_widget().destroy()
+            toolbar.destroy()
         fig = plt.figure(1)
         ax = fig.add_subplot()
         canvas = FigureCanvasTkAgg(fig, master=down_frame)
@@ -200,7 +179,6 @@ def main():
             counter += 1
             Label(up_frame, text=f"Количество итераций: {counter}").grid(row=4, column=0, columnspan=2, sticky="we")
         # plt.savefig("Solubility new H.png")
-        root.bind_all('<Button-3>', lambda event: remove_plot(canvas, toolbar))
 
 
 root = Tk()
