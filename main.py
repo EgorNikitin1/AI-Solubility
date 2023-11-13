@@ -183,7 +183,7 @@ def main():
 
 root = Tk()
 root.title("Моделирование процесса диффузии вещества в водной среде")
-root.geometry("625x875")
+root.geometry("735x875")
 
 up_frame = Frame(root)
 up_frame.pack(fill="both", expand=True)
@@ -203,8 +203,8 @@ atxt.grid(row=1, column=1, sticky="we")
 Button(up_frame, text="Ввести", command=main).grid(row=2, column=0, columnspan=2, sticky="we")
 root.bind_all('<Return>', lambda event: main())
 
-img = ImageTk.PhotoImage(Image.open("Solubility Chart.png").resize((350, 350)))
-panel = Label(up_frame, image=img, width=350)
+img = ImageTk.PhotoImage(Image.open("Solubility Chart.png").resize((460, 350)))
+panel = Label(up_frame, image=img, width=460)
 panel.grid(row=0, column=2, rowspan=5)
 
 root.mainloop()
