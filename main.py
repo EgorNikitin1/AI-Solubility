@@ -193,6 +193,9 @@ def btn_click():
         toolbar2.destroy()
     fig2 = plt.figure()
     ax2 = fig2.add_subplot()
+    fig2.patch.set_facecolor('#F0F0F0')
+    plt.xlim([0, n])
+    plt.ylim([0, n])
     canvas2 = FigureCanvasTkAgg(fig2, master=fig_frame2)
     canvas2.draw()
     canvas2.get_tk_widget().pack()
@@ -227,6 +230,9 @@ def main():
 
         fig = plt.figure(1)
         ax = fig.add_subplot()
+        fig.patch.set_facecolor('#F0F0F0')
+        plt.xlim([0, n])
+        plt.ylim([0, n])
         canvas = FigureCanvasTkAgg(fig, master=fig_frame1)
         canvas.draw()
         canvas.get_tk_widget().pack()
@@ -259,6 +265,7 @@ def main():
 root = Tk()
 root.title("Моделирование процесса диффузии вещества в водной среде")
 root.geometry("1110x1045")
+root.iconbitmap("Icon.ico")
 
 head_frame = Frame(root, width=640, height=522)
 head_frame.grid(row=0, column=0)
